@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tide::StatusCode;
 use tokio::sync::{Mutex, MutexGuard};
 
-use crate::mpv_ipc::{IpcError, MpvIpc};
+use crate::mpv_ipc::MpvIpc;
 
 #[derive(Debug, Clone)]
 pub struct ServerState {
@@ -19,15 +19,6 @@ impl ServerState {
 
     async fn ipc(&self) -> MutexGuard<MpvIpc> {
         self.ipc.lock().await
-    }
-
-    pub async fn enqueue_url(&self, url: String) -> Result<(), IpcError> {
-        let _ = self.ipc().await.loadfile_append_play(&url).await?;
-        Ok(())
-    }
-
-    pub async fn get_playlist(&self) -> Result<serde_json::Value, IpcError> {
-        self.ipc().await.get_playlist().await
     }
 }
 
@@ -47,7 +38,9 @@ async fn enqueue_url(mut req: tide::Request<ServerState>) -> tide::Result<tide::
         .map_err(|e| tide::Error::new(400, e.into_inner()))?;
 
     req.state()
-        .enqueue_url(body.url)
+        .ipc()
+        .await
+        .loadfile_append_play(&body.url)
         .await
         .map_err(|e| tide::Error::new(500, e))?;
 
@@ -57,10 +50,18 @@ async fn enqueue_url(mut req: tide::Request<ServerState>) -> tide::Result<tide::
 }
 
 async fn playlist(req: tide::Request<ServerState>) -> tide::Result<tide::Response> {
-    let playlist = req.state().get_playlist().await?;
+    let playlist = req.state().ipc().await.get_playlist().await?;
 
     Ok(tide::Response::builder(StatusCode::Ok)
         .body(tide::Body::from_json(&playlist)?)
+        .build())
+}
+
+async fn playlist_next(req: tide::Request<ServerState>) -> tide::Result<tide::Response> {
+    let _ = req.state().ipc().await.playlist_next().await?;
+
+    Ok(tide::Response::builder(StatusCode::SeeOther)
+        .header("Location", "/")
         .build())
 }
 
@@ -69,6 +70,7 @@ pub fn new(mpv_ipc: MpvIpc) -> tide::Server<ServerState> {
 
     app.at("/api/enqueue").post(enqueue_url);
     app.at("/api/playlist").get(playlist);
+    app.at("/api/playlist/next").post(playlist_next);
 
     app.at("/").get(|_| async {
         Ok(tide::Response::builder(StatusCode::Ok)

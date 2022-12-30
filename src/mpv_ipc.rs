@@ -133,7 +133,7 @@ async fn handle_mpv_messages(
 ) {
     loop {
         match msg_rx.recv().await {
-            None => todo!(),
+            None => break,
             Some(msg) => match serde_json::from_slice(msg.as_slice()) {
                 // The message:
                 // - IS a reply to a command
@@ -329,5 +329,9 @@ impl MpvIpc {
 
     pub async fn get_playlist(&mut self) -> Result<serde_json::Value, IpcError> {
         self.command_reply(&["get_property", "playlist"]).await
+    }
+
+    pub async fn playlist_next(&mut self) -> Result<serde_json::Value, IpcError> {
+        self.command_reply(&["playlist-next"]).await
     }
 }

@@ -41,5 +41,9 @@ async fn main() {
 
     tide::log::start();
 
-    tokio::join!(server.listen(opts.bind_address), mpv_process.wait());
+    let server_handle = tokio::spawn(server.listen(opts.bind_address));
+
+    let _ = mpv_process.wait().await;
+
+    server_handle.abort();
 }
