@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use tide::StatusCode;
 use tokio::sync::{Mutex, MutexGuard};
@@ -8,12 +8,14 @@ use crate::mpv_ipc::MpvIpc;
 #[derive(Debug, Clone)]
 pub struct ServerState {
     pub ipc: Arc<Mutex<MpvIpc>>,
+    pub serve_dir: PathBuf,
 }
 
 impl ServerState {
-    pub fn new(mpv_ipc: MpvIpc) -> Self {
+    pub fn new(mpv_ipc: MpvIpc, serve_dir: PathBuf) -> Self {
         ServerState {
             ipc: Arc::new(Mutex::new(mpv_ipc)),
+            serve_dir,
         }
     }
 
@@ -65,27 +67,39 @@ async fn playlist_next(req: tide::Request<ServerState>) -> tide::Result<tide::Re
         .build())
 }
 
-pub fn new(mpv_ipc: MpvIpc) -> tide::Server<ServerState> {
-    let mut app = tide::with_state(ServerState::new(mpv_ipc));
+pub fn new(mpv_ipc: MpvIpc, serve_dir: PathBuf) -> tide::Server<ServerState> {
+    let mut app = tide::with_state(ServerState::new(mpv_ipc, serve_dir));
 
     app.at("/api/enqueue").post(enqueue_url);
     app.at("/api/playlist").get(playlist);
     app.at("/api/playlist/next").post(playlist_next);
 
-    app.at("/").get(|_| async {
-        Ok(tide::Response::builder(StatusCode::Ok)
-            .header("Content-Type", "text/html")
-            .body(tide::Body::from_file("public/index.html").await?))
-    });
+    app.at("/")
+        .get(|req: tide::Request<ServerState>| async move {
+            let mut path = req.state().serve_dir.clone();
+
+            path.push("index.html");
+
+            Ok(tide::Response::builder(StatusCode::Ok)
+                .header("Content-Type", "text/html")
+                .body(tide::Body::from_file(path).await?))
+        });
 
     app.at("/static/*path")
         .get(|req: tide::Request<ServerState>| async move {
-            let path = req.param("path")?;
+            let mut base_path = req.state().serve_dir.clone();
+            base_path.push("static");
+            let path = base_path.join(req.param("path")?);
 
-            // let abs_path = tokio::fs::canonicalize(path).await?;
+            let abs_path = async_std::fs::canonicalize(path).await?;
+
+            if !abs_path.starts_with(base_path) {
+                return Ok(tide::Response::new(StatusCode::NotFound));
+            }
 
             Ok(tide::Response::builder(StatusCode::Ok)
-                .body(tide::Body::from_file(&format!("public/static/{}", path)).await?))
+                .body(tide::Body::from_file(abs_path).await?)
+                .build())
         });
 
     app
