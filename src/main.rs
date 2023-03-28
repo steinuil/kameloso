@@ -62,6 +62,33 @@ async fn main() {
         .await
         .expect("Could not connect to mpv socket");
 
+    {
+        let qr_code =
+            qrcode::QrCode::new(format!("http://{}", opts.bind_address).as_bytes()).unwrap();
+
+        let qr_code_path = runtime_dir.join("qr-code.bgra");
+
+        {
+            let f = tokio::fs::File::create(&qr_code_path).await.unwrap();
+            let mut out = tokio::io::BufWriter::new(f);
+
+            qr::write_bgra(&qr_code, 4, &mut out).await.unwrap();
+        }
+
+        mpv_ipc
+            .overlay_add(&mpv_ipc::OverlayAddOptions {
+                id: 3,
+                x: 20,
+                y: 20,
+                file: qr_code_path.to_string_lossy().to_string(),
+                w: (qr_code.width() as u32 + 2) * 4,
+                h: (qr_code.width() as u32 + 2) * 4,
+                offset: 0,
+            })
+            .await
+            .unwrap();
+    }
+
     let server = server::new(mpv_ipc, opts.serve_dir);
 
     let server_handle = tokio::spawn(server.listen(opts.bind_address));

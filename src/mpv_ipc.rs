@@ -300,6 +300,16 @@ pub mod reply {
     }
 }
 
+pub struct OverlayAddOptions {
+    pub id: u8,
+    pub x: i32,
+    pub y: i32,
+    pub file: String,
+    pub offset: usize,
+    pub w: u32,
+    pub h: u32,
+}
+
 impl MpvIpc {
     pub async fn connect(path: &str) -> io::Result<Self> {
         Ok(MpvIpc {
@@ -333,5 +343,29 @@ impl MpvIpc {
 
     pub async fn playlist_next(&mut self) -> Result<serde_json::Value, IpcError> {
         self.command_reply(&["playlist-next"]).await
+    }
+
+    pub async fn overlay_add(
+        &mut self,
+        opts: &OverlayAddOptions,
+    ) -> Result<serde_json::Value, IpcError> {
+        self.command_reply(&[
+            "overlay-add",
+            &opts.id.to_string(),
+            &opts.x.to_string(),
+            &opts.y.to_string(),
+            &opts.file,
+            &opts.offset.to_string(),
+            "bgra",
+            &opts.w.to_string(),
+            &opts.h.to_string(),
+            &(opts.w * 4).to_string(),
+        ])
+        .await
+    }
+
+    pub async fn overlay_remove(&mut self, id: u8) -> Result<serde_json::Value, IpcError> {
+        self.command_reply(&["overlay-remove", &id.to_string()])
+            .await
     }
 }
