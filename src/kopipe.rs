@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, path::Path};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[cfg(windows)]
@@ -13,12 +13,12 @@ pub struct Kopipe(UnixStream);
 
 impl Kopipe {
     #[cfg(windows)]
-    pub async fn open(path: &str) -> io::Result<Self> {
+    pub async fn open<P: AsRef<Path> + ?Sized>(path: &P) -> io::Result<Self> {
         Ok(Kopipe(ClientOptions::new().open(path)?))
     }
 
     #[cfg(unix)]
-    pub async fn open(path: &str) -> io::Result<Self> {
+    pub async fn open<P: AsRef<Path> + ?Sized>(path: &P) -> io::Result<Self> {
         Ok(Kopipe(UnixStream::connect(path).await?))
     }
 

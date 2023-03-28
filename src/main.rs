@@ -1,5 +1,6 @@
 mod kopipe;
 mod mpv_ipc;
+mod qr;
 mod server;
 
 use std::path::PathBuf;
@@ -12,14 +13,14 @@ struct CliOptions {
     #[arg(long, default_value = "mpv")]
     pub mpv_path: String,
 
-    #[arg(long, default_value = "/tmp/kameloso-mpv-socket")]
-    pub mpv_socket_path: String,
-
     #[arg(long, default_value = "public")]
     pub serve_dir: PathBuf,
 
     #[arg(long, default_value = "0.0.0.0:8080")]
     pub bind_address: String,
+
+    #[arg(long, default_value = "kameloso-interactions.log")]
+    pub interactions_log: PathBuf,
 }
 
 #[tokio::main]
@@ -28,11 +29,22 @@ async fn main() {
 
     tide::log::start();
 
+    // TODO: add logic for Windows
+    let runtime_dir = std::path::PathBuf::from(
+        std::env::var("RUNTIME_DIR")
+            .or_else(|_| std::env::var("XDG_RUNTIME_DIR").map(|d| format!("{}/kameloso", d)))
+            .unwrap_or_else(|_| "/tmp/kameloso".to_string()),
+    );
+
+    let _ = tokio::fs::create_dir(&runtime_dir).await;
+
+    let mpv_socket_path = runtime_dir.join("mpv-socket");
+
     opts.serve_dir = tokio::fs::canonicalize(opts.serve_dir)
         .await
         .expect("invalid serve dir");
 
-    let mpv_socket_path = std::path::Path::new(&opts.mpv_socket_path);
+    let mpv_socket_path = std::path::Path::new(&mpv_socket_path);
 
     if mpv_socket_path.exists() {
         log::warn!("mpv socket already exists, trying to remove...");
@@ -47,18 +59,21 @@ async fn main() {
     }
 
     let mut mpv_process = tokio::process::Command::new(opts.mpv_path)
-        .arg(&format!("--input-ipc-server={}", opts.mpv_socket_path))
+        .arg(&format!(
+            "--input-ipc-server={}",
+            mpv_socket_path.to_string_lossy()
+        ))
         .arg("--force-window")
         .arg("--idle")
         .arg("--keep-open")
         .arg("--keep-open-pause=no")
-        .arg("--ytdl-format=best[height<=?480]")
+        // .arg("--ytdl-format=best[height<=?480]")
         .spawn()
         .expect("Could not start mpv");
 
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-    let mpv_ipc = mpv_ipc::MpvIpc::connect(&opts.mpv_socket_path)
+    let mut mpv_ipc = mpv_ipc::MpvIpc::connect(&mpv_socket_path)
         .await
         .expect("Could not connect to mpv socket");
 

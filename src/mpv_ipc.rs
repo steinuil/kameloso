@@ -1,6 +1,6 @@
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::json;
-use std::{collections::HashMap, io, sync::Arc};
+use std::{collections::HashMap, io, path::Path, sync::Arc};
 use thiserror::Error;
 use tokio::sync::{mpsc, oneshot, Mutex, MutexGuard};
 
@@ -311,7 +311,7 @@ pub struct OverlayAddOptions {
 }
 
 impl MpvIpc {
-    pub async fn connect(path: &str) -> io::Result<Self> {
+    pub async fn connect<P: AsRef<Path> + ?Sized>(path: &P) -> io::Result<Self> {
         Ok(MpvIpc {
             reactor: Reactor::start(Kopipe::open(path).await?).await,
         })
