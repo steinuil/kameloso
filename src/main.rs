@@ -1,7 +1,9 @@
 mod kopipe;
 mod mpv_ipc;
 mod qr;
-mod server;
+mod server_endpoints;
+mod server_hyper;
+mod server_state;
 
 use std::path::PathBuf;
 
@@ -27,7 +29,7 @@ struct CliOptions {
 async fn main() {
     let mut opts: CliOptions = CliOptions::parse();
 
-    tide::log::start();
+    // tide::log::start();
 
     // TODO: add logic for Windows
     let runtime_dir = std::path::PathBuf::from(
@@ -104,9 +106,14 @@ async fn main() {
             .unwrap();
     }
 
-    let server = server::new(mpv_ipc, opts.serve_dir);
+    // let server = server::new(mpv_ipc, opts.serve_dir);
 
-    let server_handle = tokio::spawn(server.listen(opts.bind_address));
+    // let server_handle = tokio::spawn(server.listen(opts.bind_address));
+
+    let server_handle = tokio::spawn(server_hyper::start(
+        opts.bind_address.parse().unwrap(),
+        server_state::ServerState::new(mpv_ipc, opts.serve_dir),
+    ));
 
     let _ = mpv_process.wait().await;
 
