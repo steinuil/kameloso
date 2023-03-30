@@ -2,7 +2,7 @@ use serde::Serialize;
 use warp::http::StatusCode;
 use warp::reply;
 
-use crate::mpv_ipc;
+use crate::mpv_error;
 use crate::server_state::ServerState;
 
 use self::request::EnqueueUrl;
@@ -38,8 +38,8 @@ impl warp::Reply for ApiError {
     }
 }
 
-impl From<mpv_ipc::IpcError> for ApiError {
-    fn from(value: mpv_ipc::IpcError) -> Self {
+impl From<mpv_error::IpcError> for ApiError {
+    fn from(value: mpv_error::IpcError) -> Self {
         // match value {
         //     mpv_ipc::IpcError::MpvError(_) => todo!(),
         //     mpv_ipc::IpcError::Transport(_) => todo!(),

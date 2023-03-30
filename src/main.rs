@@ -1,5 +1,7 @@
 mod kopipe;
+mod mpv_error;
 mod mpv_ipc;
+mod mpv_reactor;
 mod qr;
 mod server_endpoints;
 mod server_hyper;
@@ -44,7 +46,7 @@ async fn main() {
 
     opts.serve_dir = tokio::fs::canonicalize(opts.serve_dir)
         .await
-        .expect("invalid serve dir");
+        .expect("serve dir doesn't exist or cannot be accessed");
 
     let mpv_socket_path = std::path::Path::new(&mpv_socket_path);
 
