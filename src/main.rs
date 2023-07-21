@@ -7,9 +7,8 @@ mod server_endpoints;
 mod server_hyper;
 mod server_state;
 
-use std::path::PathBuf;
-
 use clap::Parser;
+use std::{net::SocketAddr, path::PathBuf};
 
 #[derive(Debug, Parser)]
 #[command(version)]
@@ -31,7 +30,10 @@ struct CliOptions {
 async fn main() {
     let mut opts: CliOptions = CliOptions::parse();
 
-    // tide::log::start();
+    let bind_address: SocketAddr = opts.bind_address.parse().unwrap();
+    let local_ip = local_ip_address::local_ip().unwrap();
+
+    let _ = tokio::fs::create_dir("/tmp/kameloso").await;
 
     // TODO: add logic for Windows
     let runtime_dir = std::path::PathBuf::from(
@@ -82,8 +84,9 @@ async fn main() {
         .expect("Could not connect to mpv socket");
 
     {
-        let qr_code =
-            qrcode::QrCode::new(format!("http://{}", opts.bind_address).as_bytes()).unwrap();
+        let qr_code_address = format!("http://{}:{}", local_ip, bind_address.port());
+
+        let qr_code = qrcode::QrCode::new(qr_code_address.as_bytes()).unwrap();
 
         let qr_code_path = runtime_dir.join("qr-code.bgra");
 
@@ -108,12 +111,8 @@ async fn main() {
             .unwrap();
     }
 
-    // let server = server::new(mpv_ipc, opts.serve_dir);
-
-    // let server_handle = tokio::spawn(server.listen(opts.bind_address));
-
     let server_handle = tokio::spawn(server_hyper::start(
-        opts.bind_address.parse().unwrap(),
+        bind_address,
         server_state::ServerState::new(mpv_ipc, opts.serve_dir),
     ));
 

@@ -1,6 +1,12 @@
+use std::ffi::OsStr;
+use std::path::Path;
+
+use futures::TryStreamExt;
 use serde::Serialize;
+use tokio::io::AsyncWriteExt;
 use warp::http::StatusCode;
-use warp::reply;
+use warp::multipart::FormData;
+use warp::{reply, Buf};
 
 use crate::mpv_error;
 use crate::server_state::ServerState;
@@ -64,6 +70,66 @@ pub async fn enqueue_url(
         .loadfile_append_play(&enqueue_url.url)
         .await
         .map_err(ApiError::from)?;
+
+    Ok(warp::reply::with_status(
+        warp::reply::with_header(warp::reply(), "Location", "/"),
+        StatusCode::SEE_OTHER,
+    ))
+}
+
+pub async fn upload_file(
+    form: FormData,
+    state: ServerState,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let parts: Vec<_> = form
+        .try_collect()
+        .await
+        .map_err(|_| warp::reject::reject())?;
+
+    for p in parts {
+        if p.name() == "file" {
+            let extension = match p.filename() {
+                None => return Err(warp::reject::reject()),
+                Some(fname) => Path::new(fname)
+                    .extension()
+                    .and_then(OsStr::to_str)
+                    .ok_or_else(warp::reject::reject)?,
+            };
+
+            let out_filename = format!("/tmp/kameloso/{}.{}", uuid::Uuid::new_v4(), extension);
+
+            {
+                let mut out = tokio::fs::File::create(&out_filename)
+                    .await
+                    .map_err(|_| warp::reject::reject())?;
+
+                let mut stream = p.stream();
+                loop {
+                    match stream
+                        .try_next()
+                        .await
+                        .map_err(|_| warp::reject::reject())?
+                    {
+                        None => break,
+                        Some(chunk) => {
+                            out.write_all(chunk.chunk())
+                                .await
+                                .map_err(|_| warp::reject::reject())?;
+                        }
+                    }
+                }
+            }
+
+            state
+                .ipc()
+                .await
+                .loadfile_append_play(&out_filename)
+                .await
+                .map_err(|_| warp::reject::reject())?;
+        } else {
+            return Err(warp::reject::reject());
+        }
+    }
 
     Ok(warp::reply::with_status(
         warp::reply::with_header(warp::reply(), "Location", "/"),

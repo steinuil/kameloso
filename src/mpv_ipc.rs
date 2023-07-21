@@ -59,9 +59,9 @@ impl MpvIpc {
         Ok(())
     }
 
-    pub async fn loadfile(&mut self, url: &str) -> Result<reply::Loadfile, IpcError> {
-        self.command_reply(&["loadfile", url]).await
-    }
+    // pub async fn loadfile(&mut self, url: &str) -> Result<reply::Loadfile, IpcError> {
+    //     self.command_reply(&["loadfile", url]).await
+    // }
 
     pub async fn loadfile_append_play(&mut self, url: &str) -> Result<(), IpcError> {
         self.command_empty(&["loadfile", url, "append-play"]).await
