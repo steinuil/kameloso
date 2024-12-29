@@ -1,11 +1,10 @@
 use std::io;
-use thiserror::Error;
 use tokio::sync::oneshot;
 
-#[derive(Debug, Error)]
-pub enum IpcError {
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
     #[error("error response received: {0}")]
-    MpvError(String),
+    Mpv(String),
 
     #[error(transparent)]
     Transport(#[from] io::Error),
@@ -15,4 +14,7 @@ pub enum IpcError {
 
     #[error(transparent)]
     InvalidResponse(#[from] serde_json::Error),
+
+    #[error("commands channel closed")]
+    CommandsChannelClosed,
 }

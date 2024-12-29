@@ -1,23 +1,18 @@
-use std::{path::PathBuf, sync::Arc};
-use tokio::sync::{Mutex, MutexGuard};
+use std::path::PathBuf;
 
-use crate::mpv_ipc::MpvIpc;
+use crate::mpv::Client;
 
 #[derive(Debug, Clone)]
 pub struct ServerState {
-    pub ipc: Arc<Mutex<MpvIpc>>,
+    pub ipc: Client,
     pub serve_dir: PathBuf,
 }
 
 impl ServerState {
-    pub fn new(mpv_ipc: MpvIpc, serve_dir: PathBuf) -> Self {
+    pub fn new(mpv_ipc: Client, serve_dir: PathBuf) -> Self {
         ServerState {
-            ipc: Arc::new(Mutex::new(mpv_ipc)),
+            ipc: mpv_ipc,
             serve_dir,
         }
-    }
-
-    pub async fn ipc(&self) -> MutexGuard<MpvIpc> {
-        self.ipc.lock().await
     }
 }

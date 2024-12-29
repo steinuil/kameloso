@@ -22,8 +22,8 @@ impl Kopipe {
         Ok(Kopipe(UnixStream::connect(path).await?))
     }
 
-    pub async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.0.write(buf).await
+    pub async fn write(&mut self, buf: &[u8]) -> io::Result<()> {
+        self.0.write_all(buf).await
     }
 
     pub async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {

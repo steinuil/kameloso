@@ -1,7 +1,5 @@
 mod kopipe;
-mod mpv_error;
-mod mpv_ipc;
-mod mpv_reactor;
+mod mpv;
 mod qr;
 mod server_endpoints;
 mod server_hyper;
@@ -9,6 +7,7 @@ mod server_state;
 
 use clap::Parser;
 use std::{net::SocketAddr, path::PathBuf};
+use tokio::{fs, sync::mpsc};
 
 #[derive(Debug, Parser)]
 #[command(version)]
@@ -28,12 +27,14 @@ struct CliOptions {
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
+
     let mut opts: CliOptions = CliOptions::parse();
 
     let bind_address: SocketAddr = opts.bind_address.parse().unwrap();
     let local_ip = local_ip_address::local_ip().unwrap();
 
-    let _ = tokio::fs::create_dir("/tmp/kameloso").await;
+    let _ = fs::create_dir("/tmp/kameloso").await;
 
     // TODO: add logic for Windows
     let runtime_dir = std::path::PathBuf::from(
@@ -42,11 +43,11 @@ async fn main() {
             .unwrap_or_else(|_| "/tmp/kameloso".to_string()),
     );
 
-    let _ = tokio::fs::create_dir(&runtime_dir).await;
+    let _ = fs::create_dir(&runtime_dir).await;
 
     let mpv_socket_path = runtime_dir.join("mpv-socket");
 
-    opts.serve_dir = tokio::fs::canonicalize(opts.serve_dir)
+    opts.serve_dir = fs::canonicalize(opts.serve_dir)
         .await
         .expect("serve dir doesn't exist or cannot be accessed");
 
@@ -55,7 +56,7 @@ async fn main() {
     if mpv_socket_path.exists() {
         log::warn!("mpv socket already exists, trying to remove...");
 
-        match tokio::fs::remove_file(mpv_socket_path).await {
+        match fs::remove_file(mpv_socket_path).await {
             Ok(()) => log::info!("Cleaned up old socket"),
             Err(_) => {
                 log::error!("Failed to clean up socket");
@@ -73,15 +74,19 @@ async fn main() {
         .arg("--idle")
         .arg("--keep-open")
         .arg("--keep-open-pause=no")
-        // .arg("--ytdl-format=best[height<=?480]")
+        .arg("--ytdl-format=best*")
         .spawn()
         .expect("Could not start mpv");
 
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-    let mut mpv_ipc = mpv_ipc::MpvIpc::connect(&mpv_socket_path)
-        .await
-        .expect("Could not connect to mpv socket");
+    let (commands_tx, commands_rx) = mpsc::unbounded_channel();
+
+    let mpv_pipe = kopipe::Kopipe::open(mpv_socket_path).await.unwrap();
+
+    let mpv_ipc = mpv::Client::new(commands_tx);
+
+    tokio::spawn(mpv::reactor::start(mpv_pipe, commands_rx));
 
     {
         let qr_code_address = format!("http://{}:{}", local_ip, bind_address.port());
@@ -91,14 +96,14 @@ async fn main() {
         let qr_code_path = runtime_dir.join("qr-code.bgra");
 
         {
-            let f = tokio::fs::File::create(&qr_code_path).await.unwrap();
+            let f = fs::File::create(&qr_code_path).await.unwrap();
             let mut out = tokio::io::BufWriter::new(f);
 
             qr::write_bgra(&qr_code, 4, &mut out).await.unwrap();
         }
 
         mpv_ipc
-            .overlay_add(&mpv_ipc::OverlayAddOptions {
+            .overlay_add(&mpv::OverlayAddOptions {
                 id: 3,
                 x: 20,
                 y: 20,

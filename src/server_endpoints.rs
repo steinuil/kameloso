@@ -8,8 +8,10 @@ use warp::http::StatusCode;
 use warp::multipart::FormData;
 use warp::{reply, Buf};
 
-use crate::mpv_error;
-use crate::server_state::ServerState;
+use crate::{
+    mpv::{Error as IpcError, LoadFileOptions},
+    server_state::ServerState,
+};
 
 use self::request::EnqueueUrl;
 
@@ -44,8 +46,8 @@ impl warp::Reply for ApiError {
     }
 }
 
-impl From<mpv_error::IpcError> for ApiError {
-    fn from(value: mpv_error::IpcError) -> Self {
+impl From<IpcError> for ApiError {
+    fn from(value: IpcError) -> Self {
         // match value {
         //     mpv_ipc::IpcError::MpvError(_) => todo!(),
         //     mpv_ipc::IpcError::Transport(_) => todo!(),
@@ -60,16 +62,23 @@ impl From<mpv_error::IpcError> for ApiError {
     }
 }
 
+impl warp::reject::Reject for IpcError {}
+
+impl warp::Reply for IpcError {
+    fn into_response(self) -> reply::Response {
+        let err: ApiError = self.into();
+        warp::reply::with_status(warp::reply::json(&err), err.status).into_response()
+    }
+}
+
 pub async fn enqueue_url(
     enqueue_url: EnqueueUrl,
     state: ServerState,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     state
-        .ipc()
-        .await
-        .loadfile_append_play(&enqueue_url.url)
-        .await
-        .map_err(ApiError::from)?;
+        .ipc
+        .load_file(&enqueue_url.url, &LoadFileOptions::AppendPlay)
+        .await?;
 
     Ok(warp::reply::with_status(
         warp::reply::with_header(warp::reply(), "Location", "/"),
@@ -87,48 +96,46 @@ pub async fn upload_file(
         .map_err(|_| warp::reject::reject())?;
 
     for p in parts {
-        if p.name() == "file" {
-            let extension = match p.filename() {
-                None => return Err(warp::reject::reject()),
-                Some(fname) => Path::new(fname)
-                    .extension()
-                    .and_then(OsStr::to_str)
-                    .ok_or_else(warp::reject::reject)?,
-            };
+        if p.name() != "file" {
+            return Err(warp::reject::reject());
+        }
 
-            let out_filename = format!("/tmp/kameloso/{}.{}", uuid::Uuid::new_v4(), extension);
+        let extension = match p.filename() {
+            None => return Err(warp::reject::reject()),
+            Some(fname) => Path::new(fname)
+                .extension()
+                .and_then(OsStr::to_str)
+                .ok_or_else(warp::reject::reject)?,
+        };
 
-            {
-                let mut out = tokio::fs::File::create(&out_filename)
+        let out_filename = format!("/tmp/kameloso/{}.{}", uuid::Uuid::new_v4(), extension);
+
+        {
+            let mut out = tokio::fs::File::create(&out_filename)
+                .await
+                .map_err(|_| warp::reject::reject())?;
+
+            let mut stream = p.stream();
+            loop {
+                match stream
+                    .try_next()
                     .await
-                    .map_err(|_| warp::reject::reject())?;
-
-                let mut stream = p.stream();
-                loop {
-                    match stream
-                        .try_next()
-                        .await
-                        .map_err(|_| warp::reject::reject())?
-                    {
-                        None => break,
-                        Some(chunk) => {
-                            out.write_all(chunk.chunk())
-                                .await
-                                .map_err(|_| warp::reject::reject())?;
-                        }
+                    .map_err(|_| warp::reject::reject())?
+                {
+                    None => break,
+                    Some(chunk) => {
+                        out.write_all(chunk.chunk())
+                            .await
+                            .map_err(|_| warp::reject::reject())?;
                     }
                 }
             }
-
-            state
-                .ipc()
-                .await
-                .loadfile_append_play(&out_filename)
-                .await
-                .map_err(|_| warp::reject::reject())?;
-        } else {
-            return Err(warp::reject::reject());
         }
+
+        state
+            .ipc
+            .load_file(&out_filename, &LoadFileOptions::AppendPlay)
+            .await?;
     }
 
     Ok(warp::reply::with_status(
@@ -138,23 +145,13 @@ pub async fn upload_file(
 }
 
 pub async fn get_playlist(state: ServerState) -> Result<impl warp::Reply, warp::Rejection> {
-    let playlist = state
-        .ipc()
-        .await
-        .get_playlist()
-        .await
-        .map_err(ApiError::from)?;
+    let playlist = state.ipc.get_playlist().await?;
 
     Ok(warp::reply::json(&playlist))
 }
 
 pub async fn playlist_next(state: ServerState) -> Result<impl warp::Reply, warp::Rejection> {
-    state
-        .ipc()
-        .await
-        .playlist_next()
-        .await
-        .map_err(ApiError::from)?;
+    state.ipc.playlist_next().await?;
 
     Ok(warp::reply::with_status(
         warp::reply::with_header(warp::reply(), "Location", "/"),

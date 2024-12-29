@@ -3,13 +3,6 @@ use warp::Filter;
 
 use crate::server_state::ServerState;
 
-// fn body_json<T>() -> impl Filter<Extract = (T,), Error = warp::Rejection> + Clone
-// where
-//     T: std::marker::Send + serde::de::DeserializeOwned,
-// {
-//     warp::body::content_length_limit(1024 * 4).and(warp::body::json())
-// }
-
 fn with_arg<T: std::marker::Send + std::clone::Clone>(
     t: T,
 ) -> impl Filter<Extract = (T,), Error = std::convert::Infallible> + Clone {
