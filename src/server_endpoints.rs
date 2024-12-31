@@ -1,6 +1,3 @@
-use std::ffi::OsStr;
-use std::path::Path;
-
 use futures::TryStreamExt;
 use serde::Serialize;
 use tokio::io::AsyncWriteExt;
@@ -100,18 +97,14 @@ pub async fn upload_file(
             return Err(warp::reject::reject());
         }
 
-        let extension = match p.filename() {
-            None => return Err(warp::reject::reject()),
-            Some(fname) => Path::new(fname)
-                .extension()
-                .and_then(OsStr::to_str)
-                .ok_or_else(warp::reject::reject)?,
-        };
+        let filename = p.filename().ok_or(warp::reject::reject())?;
 
-        let out_filename = format!("/tmp/kameloso/{}.{}", uuid::Uuid::new_v4(), extension);
+        let filename = &state
+            .media_dir
+            .join(format!("{}-{}", uuid::Uuid::new_v4(), filename));
 
         {
-            let mut out = tokio::fs::File::create(&out_filename)
+            let mut out = tokio::fs::File::create(&filename)
                 .await
                 .map_err(|_| warp::reject::reject())?;
 
@@ -134,7 +127,10 @@ pub async fn upload_file(
 
         state
             .ipc
-            .load_file(&out_filename, &LoadFileOptions::AppendPlay)
+            .load_file(
+                filename.to_str().expect("invalid path"),
+                &LoadFileOptions::AppendPlay,
+            )
             .await?;
     }
 

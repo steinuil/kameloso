@@ -15,8 +15,6 @@ use self::response::*;
 //   set_property vid <id>
 //   video-remove <id>
 
-// handle playlists
-
 // Replies to commands are defined here, search for &cmd->result
 // https://github.com/mpv-player/mpv/blob/master/player/command.c
 pub mod response {

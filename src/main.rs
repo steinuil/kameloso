@@ -23,6 +23,46 @@ struct CliOptions {
 
     #[arg(long, default_value = "kameloso-interactions.log")]
     pub interactions_log: PathBuf,
+
+    #[arg(long, default_value = "media")]
+    pub media_dir: PathBuf,
+}
+
+fn get_runtime_dir_unix() -> PathBuf {
+    if let Ok(path) = std::env::var("KAMELOSO_SOCKET_PATH") {
+        return PathBuf::from(path);
+    }
+
+    if let Ok(path) = std::env::var("XDG_RUNTIME_DIR") {
+        return PathBuf::from(path).join("kameloso");
+    }
+
+    PathBuf::from("/tmp/kameloso")
+}
+
+fn get_tmpdir_windows() -> PathBuf {
+    if let Ok(path) = std::env::var("TMP") {
+        return PathBuf::from(path);
+    }
+
+    if let Ok(path) = std::env::var("TEMP") {
+        return PathBuf::from(path);
+    }
+
+    if let Ok(path) = std::env::var("USERPROFILE") {
+        return PathBuf::from(path);
+    }
+
+    panic!("could not find temp dir on Windows");
+}
+
+fn get_socket_path_windows() -> PathBuf {
+    if let Ok(path) = std::env::var("KAMELOSO_SOCKET_PATH") {
+        return PathBuf::from(path);
+    }
+
+    // https://learn.microsoft.com/en-us/windows/win32/ipc/pipe-names
+    PathBuf::from(r#"\\.\pipe\kameloso-mpv-socket"#)
 }
 
 #[tokio::main]
@@ -34,18 +74,21 @@ async fn main() {
     let bind_address: SocketAddr = opts.bind_address.parse().unwrap();
     let local_ip = local_ip_address::local_ip().unwrap();
 
-    let _ = fs::create_dir("/tmp/kameloso").await;
+    let _ = fs::create_dir(&opts.media_dir).await;
 
-    // TODO: add logic for Windows
-    let runtime_dir = std::path::PathBuf::from(
-        std::env::var("RUNTIME_DIR")
-            .or_else(|_| std::env::var("XDG_RUNTIME_DIR").map(|d| format!("{}/kameloso", d)))
-            .unwrap_or_else(|_| "/tmp/kameloso".to_string()),
-    );
+    let runtime_dir = if cfg!(unix) {
+        get_runtime_dir_unix()
+    } else {
+        get_tmpdir_windows().join("kameloso")
+    };
 
     let _ = fs::create_dir(&runtime_dir).await;
 
-    let mpv_socket_path = runtime_dir.join("mpv-socket");
+    let mpv_socket_path = if cfg!(unix) {
+        runtime_dir.join("mpv-socket")
+    } else {
+        get_socket_path_windows()
+    };
 
     opts.serve_dir = fs::canonicalize(opts.serve_dir)
         .await
@@ -86,7 +129,7 @@ async fn main() {
 
     let mpv_ipc = mpv::Client::new(commands_tx);
 
-    tokio::spawn(mpv::reactor::start(mpv_pipe, commands_rx));
+    let reactor_handle = tokio::spawn(mpv::reactor::start(mpv_pipe, commands_rx));
 
     {
         let qr_code_address = format!("http://{}:{}", local_ip, bind_address.port());
@@ -118,10 +161,15 @@ async fn main() {
 
     let server_handle = tokio::spawn(server_hyper::start(
         bind_address,
-        server_state::ServerState::new(mpv_ipc, opts.serve_dir),
+        server_state::ServerState {
+            ipc: mpv_ipc,
+            serve_dir: opts.serve_dir,
+            media_dir: opts.media_dir,
+        },
     ));
 
     let _ = mpv_process.wait().await;
 
     server_handle.abort();
+    reactor_handle.abort();
 }

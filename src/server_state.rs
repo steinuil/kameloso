@@ -6,13 +6,5 @@ use crate::mpv::Client;
 pub struct ServerState {
     pub ipc: Client,
     pub serve_dir: PathBuf,
-}
-
-impl ServerState {
-    pub fn new(mpv_ipc: Client, serve_dir: PathBuf) -> Self {
-        ServerState {
-            ipc: mpv_ipc,
-            serve_dir,
-        }
-    }
+    pub media_dir: PathBuf,
 }
