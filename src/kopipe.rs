@@ -15,7 +15,7 @@ pub async fn open<P: AsRef<Path> + ?Sized>(path: &P) -> io::Result<Kopipe> {
     let pipe = UnixStream::connect(path).await;
 
     #[cfg(windows)]
-    let pipe = ClientOptions::new().open(path.into());
+    let pipe = ClientOptions::new().open(path.as_ref());
 
     pipe
 }
