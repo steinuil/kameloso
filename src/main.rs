@@ -82,7 +82,7 @@ async fn main() {
 
     let (commands_tx, commands_rx) = mpsc::unbounded_channel();
 
-    let mpv_pipe = kopipe::Kopipe::open(mpv_socket_path).await.unwrap();
+    let mpv_pipe = kopipe::open(mpv_socket_path).await.unwrap();
 
     let mpv_ipc = mpv::Client::new(commands_tx);
 

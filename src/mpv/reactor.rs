@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
 use tokio::{
-    io, select,
+    io::{self, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
+    select,
     sync::{
         mpsc::{error::SendError, UnboundedReceiver, UnboundedSender},
         oneshot,
     },
 };
-
-use crate::kopipe::Kopipe;
 
 use super::{command::RawCommand, message::Message, message_buffer::MessageBuffer};
 
@@ -33,16 +32,16 @@ enum Error {
     Pipe(PipeClosed),
 }
 
-struct Reactor {
+struct Reactor<NamedPipe> {
     message_buffer: MessageBuffer,
-    mpv_pipe: Kopipe,
+    mpv_pipe: NamedPipe,
     commands_rx: UnboundedReceiver<CommandWithHandler>,
     handlers: HashMap<i64, ResponseHandler>,
     next_request_id: i64,
 }
 
-impl Reactor {
-    fn new(mpv_pipe: Kopipe, commands_rx: UnboundedReceiver<CommandWithHandler>) -> Self {
+impl<NamedPipe: AsyncRead + AsyncWrite + Unpin> Reactor<NamedPipe> {
+    fn new(mpv_pipe: NamedPipe, commands_rx: UnboundedReceiver<CommandWithHandler>) -> Self {
         Self {
             message_buffer: MessageBuffer::new(),
             mpv_pipe,
@@ -104,7 +103,7 @@ impl Reactor {
         let mut cmd = cmd.serialize_to_vec();
         cmd.push(Message::LINE_SEPARATOR);
 
-        self.mpv_pipe.write(&cmd).await
+        self.mpv_pipe.write_all(&cmd).await
     }
 
     async fn step(&mut self) -> Result<(), Error> {
@@ -136,10 +135,13 @@ impl Reactor {
     }
 }
 
-pub async fn start(
-    mpv_pipe: Kopipe,
+pub async fn start<NamedPipe>(
+    mpv_pipe: NamedPipe,
     commands_rx: UnboundedReceiver<CommandWithHandler>,
-) -> Result<PipeClosed, io::Error> {
+) -> Result<PipeClosed, io::Error>
+where
+    NamedPipe: AsyncRead + AsyncWrite + Unpin,
+{
     let mut pipe = Reactor::new(mpv_pipe, commands_rx);
 
     loop {

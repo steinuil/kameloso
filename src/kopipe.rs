@@ -1,5 +1,4 @@
 use std::{io, path::Path};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[cfg(windows)]
 use tokio::net::windows::named_pipe::{ClientOptions, NamedPipeClient};
@@ -7,26 +6,16 @@ use tokio::net::windows::named_pipe::{ClientOptions, NamedPipeClient};
 use tokio::net::UnixStream;
 
 #[cfg(windows)]
-pub struct Kopipe(NamedPipeClient);
+pub type Kopipe = NamedPipeClient;
 #[cfg(unix)]
-pub struct Kopipe(UnixStream);
+pub type Kopipe = UnixStream;
 
-impl Kopipe {
-    #[cfg(windows)]
-    pub async fn open<P: AsRef<Path> + ?Sized>(path: &P) -> io::Result<Self> {
-        Ok(Kopipe(ClientOptions::new().open(path)?))
-    }
-
+pub async fn open<P: AsRef<Path> + ?Sized>(path: &P) -> io::Result<Kopipe> {
     #[cfg(unix)]
-    pub async fn open<P: AsRef<Path> + ?Sized>(path: &P) -> io::Result<Self> {
-        Ok(Kopipe(UnixStream::connect(path).await?))
-    }
+    let pipe = UnixStream::connect(path).await;
 
-    pub async fn write(&mut self, buf: &[u8]) -> io::Result<()> {
-        self.0.write_all(buf).await
-    }
+    #[cfg(windows)]
+    let pipe = ClientOptions::new().open(path);
 
-    pub async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.read(buf).await
-    }
+    pipe
 }
