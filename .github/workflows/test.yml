@@ -1,0 +1,32 @@
+on:
+  - push
+  - pull_request
+
+name: CI
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: 
+          - x86_64-unknown-linux-gnu
+          - x86_64-pc-windows-gnu
+          - x86_64-unknown-linux-musl
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: cargo build --target ${{ matrix.target }} --verbose
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Run clippy
+      run: cargo clippy
+    - name: Run rustfmt
+      run: cargo fmt --check
+
+
