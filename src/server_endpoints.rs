@@ -100,7 +100,7 @@ pub async fn upload_file(
         let filename = p.filename().ok_or(warp::reject::reject())?;
 
         let filename = &state
-            .media_dir
+            .upload_dir
             .join(format!("{}-{}", uuid::Uuid::new_v4(), filename));
 
         {

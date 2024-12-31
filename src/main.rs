@@ -74,7 +74,7 @@ async fn main() {
     let bind_address: SocketAddr = opts.bind_address.parse().unwrap();
     let local_ip = local_ip_address::local_ip().unwrap();
 
-    let _ = fs::create_dir(&opts.media_dir).await;
+    let _ = fs::create_dir(&opts.upload_dir).await;
 
     let runtime_dir = if cfg!(unix) {
         get_runtime_dir_unix()
@@ -164,7 +164,7 @@ async fn main() {
         server_state::ServerState {
             ipc: mpv_ipc,
             serve_dir: opts.serve_dir,
-            media_dir: opts.media_dir,
+            upload_dir: opts.upload_dir,
         },
     ));
 

@@ -6,5 +6,5 @@ use crate::mpv::Client;
 pub struct ServerState {
     pub ipc: Client,
     pub serve_dir: PathBuf,
-    pub media_dir: PathBuf,
+    pub upload_dir: PathBuf,
 }

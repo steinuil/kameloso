@@ -23,9 +23,9 @@ jobs:
       run: rustup target add ${{ matrix.target }}
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build --target ${{ matrix.target }} --verbose
+      run: cargo check --target ${{ matrix.target }} --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --target ${{ matrix.target }}  --verbose
     - name: Run clippy
       run: cargo clippy
     - name: Run rustfmt
