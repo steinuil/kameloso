@@ -24,8 +24,8 @@ struct CliOptions {
     #[arg(long, default_value = "kameloso-interactions.log")]
     pub interactions_log: PathBuf,
 
-    #[arg(long, default_value = "media")]
-    pub media_dir: PathBuf,
+    #[arg(long, default_value = "uploads")]
+    pub upload_dir: PathBuf,
 }
 
 fn get_runtime_dir_unix() -> PathBuf {
