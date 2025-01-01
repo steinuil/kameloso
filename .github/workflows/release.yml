@@ -1,3 +1,5 @@
+name: Build for release
+
 on:
   # release:
   #   types: 
@@ -46,7 +48,7 @@ jobs:
 
       - name: Create archive (windows)
         if: ${{ startsWith(matrix.build, 'windows') }}
-        run: Compress-Archive -Recurse -Destination kameloso-${{ matrix.target }}.zip -Path kameloso
+        run: Compress-Archive -DestinationPath kameloso-${{ matrix.target }}.zip -Path kameloso
 
       - name: Upload archive
         uses: actions/upload-artifact@v4
