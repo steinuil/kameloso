@@ -170,5 +170,6 @@ async fn main() {
 
     let _ = reactor_handle.await;
     server_handle.abort();
-    let _ = mpv_process.kill().await;
+    let _ = mpv_process.wait().await;
+    // let _ = mpv_process.kill().await;
 }
