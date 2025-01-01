@@ -4,26 +4,56 @@ on:
       - created
 
 jobs:
-  release:
-    name: release ${{ matrix.target }}
-    runs-on: ubuntu-latest
+  release-build:
+    name: Release ${{ matrix.build }}
+    runs-on: ${{ matrix.os }}
+
     strategy:
-      fail-fast: false
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
-            archive: tar.gz
-          - target: aarch64-unknown-linux-gnu
-            archive: tar.gz
-          - target: x86_64-pc-windows-gnu
-            archive: zip
+          - build: linux
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            binary_name: kameloso
+
+          - build: linux
+            os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            binary_name: kameloso
+
+          - build: windows-gnu
+            os: windows-latest
+            target: x86_64-pc-windows-gnu
+            binary_name: kameloso.exe
+    
     steps:
-      - uses: actions/checkout@master
-      - name: Compile and release
-        uses: rust-build/rust-build.action@v1.4.5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Install target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Install musl-tools
+        if: ${{ endsWith(matrix.target,'musl') }}
+        run: sudo apt-get install -y musl-tools
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Create archive folder
+        run: mkdir kameloso
+
+      - name: Copy artifact
+        run: cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} kameloso/
+
+      - name: Copy public folder
+        run: cp -r public kameloso/public
+
+      - name: Create archive
+        run: cd release && zip -r kameloso-${{ matrix.target }}.zip kameloso
+
+      - name: Upload archive
+        uses: actions/upload-artifact@v4
         with:
-          RUSTTARGET: ${{ matrix.target }}
-          ARCHIVE_TYPES: ${{ matrix.archive }}
-          EXTRA_FILES: "public"
+          name: kameloso-${{ matrix.target }}
+          path: kameloso-${{ matrix.target }}.zip
