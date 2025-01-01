@@ -5,8 +5,15 @@
     naersk.url = "github:nix-community/naersk";
   };
 
-  outputs = { self, nixpkgs, flake-utils, naersk }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      naersk,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs { inherit system; };
         naerskBuildPackage = (pkgs.callPackage naersk { }).buildPackage;
@@ -29,7 +36,9 @@
             clippy
             lldb
             rustfmt
+            typescript-language-server
           ];
         };
-      });
+      }
+    );
 }
