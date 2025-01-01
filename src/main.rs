@@ -109,7 +109,7 @@ async fn main() {
     }
 
     let mut mpv_process = tokio::process::Command::new(opts.mpv_path)
-        .arg(&format!(
+        .arg(format!(
             "--input-ipc-server={}",
             mpv_socket_path.to_string_lossy()
         ))
