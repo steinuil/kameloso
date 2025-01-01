@@ -12,23 +12,27 @@ use tokio::{fs, sync::mpsc};
 #[derive(Debug, Parser)]
 #[command(version)]
 struct CliOptions {
+    /// Path to the mpv binary.
     #[arg(long, default_value = "mpv")]
     pub mpv_path: String,
 
-    #[arg(long, default_value = "public")]
-    pub serve_dir: PathBuf,
-
+    /// Bind the HTTP server to this address.
     #[arg(long, default_value = "0.0.0.0:8080")]
     pub bind_address: String,
 
-    #[arg(long, default_value = "kameloso-interactions.log")]
-    pub interactions_log: PathBuf,
+    /// Directory containing index.html and static that the HTTP server will serve.
+    #[arg(long, default_value = "public")]
+    pub serve_dir: PathBuf,
 
+    /// Directory that the uploaded files will be saved to.
     #[arg(long, default_value = "uploads")]
     pub upload_dir: PathBuf,
 
+    /// Override the value of the --format flag that will be passed to yt-dlp.
     #[arg(long)]
     pub ytdl_format: Option<String>,
+    // #[arg(long, default_value = "kameloso-interactions.log")]
+    // pub interactions_log: PathBuf,
 }
 
 fn get_runtime_dir_unix() -> PathBuf {
