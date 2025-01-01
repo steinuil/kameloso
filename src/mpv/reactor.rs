@@ -38,6 +38,11 @@ struct Reactor<NamedPipe> {
     commands_rx: UnboundedReceiver<CommandWithHandler>,
     handlers: HashMap<i64, ResponseHandler>,
     next_request_id: i64,
+
+    // This field is only here because Windows likes to return an empty buffer
+    // the first time we poll for a read, so we check if this is the first time
+    // we encountered an empty read and if we get a second one, we terminate the task.
+    has_received_empty_read: bool,
 }
 
 impl<NamedPipe: AsyncRead + AsyncWrite + Unpin> Reactor<NamedPipe> {
@@ -48,6 +53,7 @@ impl<NamedPipe: AsyncRead + AsyncWrite + Unpin> Reactor<NamedPipe> {
             commands_rx,
             handlers: HashMap::new(),
             next_request_id: 0,
+            has_received_empty_read: false,
         }
     }
 
@@ -111,10 +117,14 @@ impl<NamedPipe: AsyncRead + AsyncWrite + Unpin> Reactor<NamedPipe> {
 
         select! {
             read = self.mpv_pipe.read(&mut buf) => match read? {
-                0 => {
+                0 if self.has_received_empty_read => {
                     log::info!("shutting down: mpv pipe closed");
                     return Err(Error::Pipe(PipeClosed::Mpv));
                 },
+                0 => {
+                    log::debug!("read 0 bytes from named pipe, retrying");
+                    self.has_received_empty_read = true;
+                }
                 read => {
                     self.handle_input(&buf[..read]);
                 }
