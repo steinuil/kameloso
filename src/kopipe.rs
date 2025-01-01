@@ -4,7 +4,7 @@ use std::{io, path::Path};
 use tokio::net::UnixStream as Kopipe;
 #[cfg(windows)]
 use tokio::{
-    io::Interest,
+    io::{AsyncReadExt, Interest},
     net::windows::named_pipe::{ClientOptions, NamedPipeClient as Kopipe},
 };
 
