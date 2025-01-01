@@ -40,8 +40,13 @@ jobs:
       - name: Copy public folder
         run: cp -r public kameloso/public
 
-      - name: Create archive
+      - name: Create archive (linux)
+        if: ${{ ! startsWith(matrix.build, 'windows') }}
         run: zip -r kameloso-${{ matrix.target }}.zip kameloso
+
+      - name: Create archive (windows)
+        if: ${{ startsWith(matrix.build, 'windows') }}
+        run: Compress-Archive -Recurse -Destination kameloso-${{ matrix.target }}.zip -Path kameloso
 
       - name: Upload archive
         uses: actions/upload-artifact@v4
