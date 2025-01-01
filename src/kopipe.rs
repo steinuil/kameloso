@@ -15,7 +15,14 @@ pub async fn open<P: AsRef<Path> + ?Sized>(path: &P) -> io::Result<Kopipe> {
     #[cfg(windows)]
     let pipe = {
         let pipe = ClientOptions::new().open(path.as_ref())?;
-        pipe.ready(Interest::READABLE | Interest::WRITABLE).await?;
+        loop {
+            pipe.ready(Interest::READABLE | Interest::WRITABLE).await?;
+
+            if pipe.is_readable() && pipe.is_readable() {
+                break;
+            }
+        }
+
         Ok(pipe)
     };
 
