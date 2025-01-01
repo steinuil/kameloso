@@ -1,0 +1,75 @@
+html, main {
+	color: #fff;
+	background: #333;
+	font-family: sans-serif;
+}
+
+h1 {
+	padding: 0;
+	margin: 1em 0;
+	line-height: .17em;
+	text-align: center;
+	font-weight: normal;
+	letter-spacing: 1em;
+	border-bottom: .05em solid rgba(128,128,128,0.4);
+	text-shadow: .1em .1em 0 #000;
+}
+
+a {
+	color: #fc0;
+	text-decoration: none;
+}
+
+main {
+	max-width: 40em;
+	margin: 2em auto;
+}
+
+form {
+	width: 100%;
+	margin: .5em 0;
+}
+
+button, input {
+	color: #fff;
+	background: #444;
+	font-weight: normal;
+	border: .1em solid #555;
+	border-radius: .3em;
+	padding: .3em .4em;
+	margin: 0;
+}
+
+button {
+	width: 8em;
+	margin: .3em 1em;
+	border-bottom: .1em solid #0af;
+}
+
+input {
+	width: 70%;
+	width: calc(100% - 12em);
+	border-bottom: .1em solid #f3a;
+	line-height: 1em;
+}
+
+#playlist {
+	margin: 1.5em 0;
+	padding-left: 2em;
+	color: #ababab;
+}
+
+#playlist li {
+	margin: 1em 0;
+}
+
+#playlist a {
+	display: block;
+	border-left: .1em solid #999;
+	padding: .3em .5em;
+}
+
+#playlist a.currently-playing {
+	font-weight: bold;
+	text-decoration: underline;
+}

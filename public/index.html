@@ -1,45 +1,29 @@
-<html>
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <title>kamelåså</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
 <body>
-
-<form action="/api/enqueue" method="POST">
-  <label for="url">URL:</label><br>
-  <input type="text" id="url" size=60 name="url"><br>
-  <input type="submit" value="Submit URL">
-</form>
-<form action="/api/playlist/next" method="POST">
-  <input type="submit" value="Skip">
-</form>
-<div id="playlist">Loading playlist...</div>
-
-
-<script>
-function updatePlaylist() {
-  fetch('/api/playlist').then(function(response) {
-      return response.json();
-    }).then(function(playlist) {
-      var html = '<ul>'
-
-      for (i = 0; i < playlist.length; i++) {
-        if (playlist[i].current) {
-          html += '<li><b>' + playlist[i].filename + '</b></li>'
-        } else {
-          html += '<li>' + playlist[i].filename + '</li>'
-        }
-      }
-      html += '</ul>'
-      if (playlist.length == 0) {
-        html = 'No items!'
-      }
-      document.getElementById("playlist").innerHTML = html
-    }).catch(function(err) {
-      console.log('Fetch Error : ', err)
-    })
-}
-updatePlaylist()
-setInterval(updatePlaylist, 5000)
-
-</script>
-
-
+    <main>
+        <h1>kamelåså</h1>
+        <form method="POST" action="/api/enqueue">
+            <button type="submit">add url</button><input
+                id="enqueue-url-input" name="url" type="text">
+        </form>
+        <form method="POST" action="/api/upload" enctype="multipart/form-data">
+            <button type="submit">add file</button><input 
+                id="upload-input" name="file" type="file">
+        </form>
+        <form method="POST" action="/api/playlist/next">
+            <button type="submit">skip to next</button>
+        </form>
+        <ol id="playlist">
+            <li>Loading playlist...</li>
+        </ol>
+    </main>
+    <script src="/static/main.js"></script>
 </body>
 </html>
