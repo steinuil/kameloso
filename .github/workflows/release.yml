@@ -12,6 +12,7 @@ jobs:
 
     strategy:
       matrix:
+        fail-fast: false
         include:
           - build: linux
             os: ubuntu-latest
