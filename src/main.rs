@@ -26,6 +26,9 @@ struct CliOptions {
 
     #[arg(long, default_value = "uploads")]
     pub upload_dir: PathBuf,
+
+    #[arg(long)]
+    pub ytdl_format: Option<String>,
 }
 
 fn get_runtime_dir_unix() -> PathBuf {
@@ -108,7 +111,9 @@ async fn main() {
         }
     }
 
-    let mut mpv_process = tokio::process::Command::new(opts.mpv_path)
+    let mut mpv_cmd = tokio::process::Command::new(opts.mpv_path);
+
+    mpv_cmd
         .arg(format!(
             "--input-ipc-server={}",
             mpv_socket_path.to_string_lossy()
@@ -116,10 +121,13 @@ async fn main() {
         .arg("--force-window")
         .arg("--idle")
         .arg("--keep-open")
-        .arg("--keep-open-pause=no")
-        .arg("--ytdl-format=best*")
-        .spawn()
-        .expect("Could not start mpv");
+        .arg("--keep-open-pause=no");
+
+    if let Some(format) = opts.ytdl_format {
+        mpv_cmd.arg(format!("--ytdl-format={format}"));
+    }
+
+    let mut mpv_process = mpv_cmd.spawn().expect("Could not start mpv");
 
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
