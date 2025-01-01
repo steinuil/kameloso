@@ -16,15 +16,11 @@ jobs:
       matrix:
         target: 
           - x86_64-unknown-linux-gnu
-          - x86_64-pc-windows-gnu
+          # - x86_64-pc-windows-gnu
           - x86_64-unknown-linux-musl
     steps:
     - name: Install target
       run: rustup target add ${{ matrix.target }}
-    - name: Set up MinGW
-      uses: egor-tensin/setup-mingw@v2
-      with:
-        platform: x64
     - uses: actions/checkout@v4
     - name: Build
       run: cargo check --target ${{ matrix.target }} --verbose
