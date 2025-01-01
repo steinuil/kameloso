@@ -1,23 +1,21 @@
 use std::{io, path::Path};
 
-#[cfg(windows)]
-use tokio::net::windows::named_pipe::{ClientOptions, NamedPipeClient};
 #[cfg(unix)]
-use tokio::net::UnixStream;
-
+use tokio::net::UnixStream as Kopipe;
 #[cfg(windows)]
-pub type Kopipe = NamedPipeClient;
-#[cfg(unix)]
-pub type Kopipe = UnixStream;
+use tokio::{
+    io::Interest,
+    net::windows::named_pipe::{ClientOptions, NamedPipeClient as Kopipe},
+};
 
 pub async fn open<P: AsRef<Path> + ?Sized>(path: &P) -> io::Result<Kopipe> {
     #[cfg(unix)]
-    let pipe = UnixStream::connect(path).await;
+    let pipe = Kopipe::connect(path).await;
 
     #[cfg(windows)]
     let pipe = {
         let pipe = ClientOptions::new().open(path.as_ref())?;
-        pipe.readable.await?;
+        pipe.ready(Interest::READABLE | Interest::WRITABLE).await?;
         Ok(pipe)
     };
 
