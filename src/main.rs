@@ -1,5 +1,5 @@
 mod kopipe;
-mod mpv;
+pub mod mpv;
 mod qr;
 mod server_endpoints;
 mod server_hyper;
@@ -70,7 +70,8 @@ fn get_socket_path_windows() -> PathBuf {
 
 #[tokio::main]
 async fn main() {
-    env_logger::init();
+    // Default to info log level
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let mut opts: CliOptions = CliOptions::parse();
 
