@@ -1,6 +1,6 @@
 # kamelåså
 
-`kameloso` is a LAMJP (Local Area Media Jam Party) application. Think a Chromecast or Spotify jam, but better.
+`kameloso` is a LAMP (Local Area Media Party) application. Think a Chromecast or Spotify jam, but better.
 
 It starts a web app connected to [mpv](https://mpv.io/) and lets you queue video links or upload videos.
 
