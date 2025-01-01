@@ -20,9 +20,26 @@
         <form method="POST" action="/api/playlist/next">
             <button type="submit">skip to next</button>
         </form>
-        <ol id="playlist">
-            <li>Loading playlist...</li>
-        </ol>
+        <div id="np_outer">
+            <h2>now playing</h2>
+            <div id="np">
+                <span>nothing</span>
+            </div>
+        </div>
+        <div id="lists">
+            <div id="queue_div">
+                <h2>queue</h2>
+                <ol id="queue">
+                    <li>now loading...</li>
+                </ol>
+            </div>
+            <div id="played_div">
+                <h2>played</h2>
+                <ol id="played">
+                    <li>now loading...</li>
+                </ol>
+            </div>
+        </div>
     </main>
     <script src="/static/main.js"></script>
 </body>
