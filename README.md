@@ -28,14 +28,24 @@ You should now have a binary called `kameloso` or `kameloso.exe` and a directory
 Generally you only need to run `kameloso` in the directory that contains the `public` directory. If mpv is not in your `$PATH` (which likely means you're on Windows) you may also need to use the `--mpv-path` flag. So:
 
 1. Open a terminal and run `kameloso` in the directory containing the `public` directory.
-  - If you're on Windows, you probably need to specify the mpv path like this: `kameloso.exe --mpv-path path\to\mpv.exe`. Replace with the actual path to the executable.
+    - If you're on Windows, you probably need to specify the mpv path like this: `kameloso.exe --mpv-path path\to\mpv.exe`. Replace with the actual path to the executable.
+    - You might also want to create a `start.bat` file in the same directory so you can just double-click it next time you want to open it:
+      ```batch
+      kameloso.exe --mpv-path path\to\mpv.exe
+      ```
 2. `kameloso` will open an mpv window and start an HTTP server, by default at `0.0.0.0:8080`. See below for how to change it.
 3. After a second you will see a QR code in the top left of the mpv window. This should contain a local URL pointing to the web UI.
 4. Go to the URL and start queueing up videos!
-  - If that URL does not work, run `ip addr` on Linux or `ipconfig` on Windows and check the machine's local IP address, which should look something like `192.168.1.<some number>`. The web UI will be at `http://<the machine's local IP address>:8080/`.
-  - If that also doesn't work, make sure that your firewall isn't blocking incoming traffic on the `8080` port.
+    - If that URL does not work, run `ip addr` on Linux or `ipconfig` on Windows and check the machine's local IP address, which should look something like `192.168.1.<some number>`. The web UI will be at `http://<the machine's local IP address>:8080/`.
+    - If that also doesn't work, make sure that your firewall isn't blocking incoming traffic on the `8080` port.
+  
+The web UI looks like this:
 
-Note: uploading is currently not very well tested.
+![Screenshot of the kameloso web UI](https://github.com/steinuil/kameloso/blob/master/extras/pictures/ui.png)
+
+And [this](https://github.com/steinuil/kameloso/blob/master/extras/pictures/intended-usage.jpg) is how it looks in the wild.
+
+Note: uploading has been reported as having issues. It will be fixed eventually.
 
 ### Other options
 
