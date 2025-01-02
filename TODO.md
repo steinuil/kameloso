@@ -4,6 +4,7 @@
   - [ ] also better error messages, that would be nice.
   - [ ] and it might be cool to give you the option to open the mpv instance by yourself
 - [ ] Maybe write some integration tests with Nix's testing framework
+- [ ] Make QR code move every once in a while to avoid burn-in
 
 ## Scope creep
 
