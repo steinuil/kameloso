@@ -10,6 +10,9 @@
 - [ ] Integrate with aria2c for downloading torrents
 - [ ] Integrate with https://github.com/9001/party-up
 - [ ] Player controls (play/pause)
+- [ ] Progress bar for currently playing file
 - [ ] Announce video title when it starts playing
+- [ ] Browse a local folder
 - [ ] Announce queues?
 - [ ] Make it possible to hide the QR code
+- [ ] send email
