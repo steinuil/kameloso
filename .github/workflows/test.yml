@@ -17,21 +17,19 @@ jobs:
         include:
           - build: linux
             os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
 
           - build: windows-gnu
             os: windows-latest
-            target: x86_64-pc-windows-gnu
 
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
 
       - name: cargo check
-        run: cargo check --target ${{ matrix.target }}
+        run: cargo check
 
       - name: cargo test
-        run: cargo test --target ${{ matrix.target }}
+        run: cargo test
 
       - name: cargo clippy
         run: cargo clippy
