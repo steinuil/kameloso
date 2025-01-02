@@ -7,6 +7,7 @@
 - [ ] Maybe write some integration tests with Nix's testing framework
 - [ ] Make QR code move every once in a while to avoid burn-in
 - [ ] Save playlist on exit and load it on start with the previous position. Maybe there's an option for this, otherwise: https://github.com/CogentRedTester/mpv-scripts/blob/master/save-playlist.lua
+- [ ] Package a batch file that downloads the latest mpv release and creates a start.bat file on Windows
 
 ## Scope creep
 
