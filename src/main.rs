@@ -18,7 +18,7 @@ struct CliOptions {
 
     /// Bind the HTTP server to this address.
     #[arg(long, default_value = "0.0.0.0:8080")]
-    pub bind_address: String,
+    pub bind_address: SocketAddr,
 
     /// Directory containing index.html and static that the HTTP server will serve.
     #[arg(long, default_value = "public")]
@@ -77,10 +77,7 @@ async fn main() {
     // Default to info log level
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    let mut opts: CliOptions = CliOptions::parse();
-
-    let bind_address: SocketAddr = opts.bind_address.parse().unwrap();
-    let local_ip = local_ip_address::local_ip().unwrap();
+    let opts: CliOptions = CliOptions::parse();
 
     let _ = fs::create_dir(&opts.upload_dir).await;
 
@@ -98,7 +95,7 @@ async fn main() {
         get_socket_path_windows()
     };
 
-    opts.serve_dir = fs::canonicalize(opts.serve_dir)
+    let serve_dir = fs::canonicalize(opts.serve_dir)
         .await
         .expect("serve dir doesn't exist or cannot be accessed");
 
@@ -134,18 +131,17 @@ async fn main() {
 
     let mut mpv_process = mpv_cmd.spawn().expect("Could not start mpv");
 
-    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
     let (commands_tx, commands_rx) = mpsc::unbounded_channel();
 
-    let mpv_pipe = kopipe::open(mpv_socket_path).await.unwrap();
-
     let mpv_ipc = mpv::Client::new(commands_tx);
+
+    let mpv_pipe = kopipe::open_retry(mpv_socket_path, 10).await.unwrap();
 
     let reactor_handle = tokio::spawn(mpv::reactor::start(mpv_pipe, commands_rx));
 
     {
-        let qr_code_address = format!("http://{}:{}", local_ip, bind_address.port());
+        let local_ip = local_ip_address::local_ip().unwrap();
+        let qr_code_address = format!("http://{}:{}", local_ip, opts.bind_address.port());
 
         let qr_code = qrcode::QrCode::new(qr_code_address.as_bytes()).unwrap();
 
@@ -173,10 +169,10 @@ async fn main() {
     }
 
     let server_handle = tokio::spawn(server_hyper::start(
-        bind_address,
+        opts.bind_address,
         server_state::ServerState {
             ipc: mpv_ipc,
-            serve_dir: opts.serve_dir,
+            serve_dir,
             upload_dir: opts.upload_dir,
         },
     ));
