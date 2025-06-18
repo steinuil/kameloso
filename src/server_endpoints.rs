@@ -18,6 +18,9 @@ mod request {
     #[derive(Debug, Clone, Deserialize)]
     pub struct EnqueueUrl {
         pub url: String,
+
+        #[serde(default)]
+        pub next: bool,
     }
 }
 
@@ -80,10 +83,13 @@ pub async fn enqueue_url(
         .into());
     }
 
-    state
-        .ipc
-        .load_file(&enqueue_url.url, &LoadFileOptions::AppendPlay)
-        .await?;
+    let options = if enqueue_url.next {
+        LoadFileOptions::InsertNextPlay
+    } else {
+        LoadFileOptions::AppendPlay
+    };
+
+    state.ipc.load_file(&enqueue_url.url, &options).await?;
 
     Ok(warp::reply::with_status(
         warp::reply::with_header(warp::reply(), "Location", "/"),
