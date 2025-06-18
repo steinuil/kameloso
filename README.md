@@ -47,6 +47,10 @@ And [this](https://github.com/steinuil/kameloso/blob/master/extras/pictures/inte
 
 Note: uploading has been reported as having issues. It will be fixed eventually.
 
+### Useful tips
+
+- You can get around youtube's age restriction by [configuring](https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#configuration) `yt-dlp` to use [cookies from your browser](https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#changes-from-youtube-dl).
+
 ### Other options
 
 Run `kameloso --help` to see a full list of options. You might need to set:
