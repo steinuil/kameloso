@@ -122,6 +122,7 @@ async fn main() {
         .arg("--idle")
         .arg("--keep-open")
         .arg("--keep-open-pause=no")
+        .arg("--no-pause")
         .args(opts.mpv_args);
 
     let mut mpv_process = mpv_cmd.spawn().expect("Could not start mpv");
