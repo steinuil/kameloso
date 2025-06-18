@@ -62,6 +62,12 @@ If you want to pass arguments to mpv you'll need to pass them after `--`, for ex
 kameloso -- --af=dynaudnorm=f=100
 ```
 
+If you're running it directly from `cargo run`, you'll need to add two double dashes (one for `cargo run`, the other one for `kameloso`)
+
+```
+cargo run -- -- --af=dynaudnorm=f=100
+```
+
 ### Customizing the web UI
 
 If you want to customize the web UI, just change the `index.html` file in the `public/` directory. Note that if you want to serve other files as well, they have to be in the `public/static/` directory.
