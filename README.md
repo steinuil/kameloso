@@ -17,7 +17,7 @@ Install these dependencies:
 
 - [mpv](https://mpv.io/)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) (optional, but recommended)
-- [ffmpeg](https://ffmpeg.org/) (yt-dlp may use it)
+- [ffmpeg](https://ffmpeg.org/) (optional, yt-dlp may use it but it can work without)
 
 Download the latest release from the Releases page, or build it yourself. Go to the Building section for that.
 
