@@ -72,6 +72,14 @@ pub async fn enqueue_url(
     enqueue_url: EnqueueUrl,
     state: ServerState,
 ) -> Result<impl warp::Reply, warp::Rejection> {
+    if enqueue_url.url.trim().is_empty() {
+        return Err(ApiError {
+            status: StatusCode::BAD_REQUEST,
+            message: "attempted to enqueue empty url".to_string(),
+        }
+        .into());
+    }
+
     state
         .ipc
         .load_file(&enqueue_url.url, &LoadFileOptions::AppendPlay)
