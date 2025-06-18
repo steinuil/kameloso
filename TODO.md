@@ -1,8 +1,8 @@
 ## General imporovements
 
-- [ ] Fix file uploading!
-- [ ] Maybe add some logic to make it wait for the socket to be opened?
-  - [ ] also better error messages, that would be nice.
+- [x] ~~Fix file uploading!~~
+- [x] Maybe add some logic to make it wait for the socket to be opened?
+  - [x] also better error messages, that would be nice.
   - [ ] and it might be cool to give you the option to open the mpv instance by yourself
 - [ ] Maybe write some integration tests with Nix's testing framework
 - [ ] Make QR code move every once in a while to avoid burn-in
@@ -15,8 +15,10 @@
 - [ ] Integrate with https://github.com/9001/party-up
 - [ ] Player controls (play/pause)
 - [ ] Progress bar for currently playing file
+  - this just needs a frontend change
 - [ ] Announce video title when it starts playing
 - [ ] Browse a local folder
 - [ ] Announce queues?
 - [ ] Make it possible to hide the QR code
+- [ ] soundcloud: would be cool to show coverart along with the music somehow (ed)
 - [ ] send email
