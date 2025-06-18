@@ -134,4 +134,16 @@ impl Client {
         self.command_reply(&["overlay-remove", &id.to_string()])
             .await
     }
+
+    pub async fn get_duration_ms(&self) -> Result<f64, Error> {
+        self.command_reply(&["get_property", "duration/full"]).await
+    }
+
+    pub async fn get_time_pos_ms(&self) -> Result<f64, Error> {
+        self.command_reply(&["get_property", "time-pos/full"]).await
+    }
+
+    pub async fn get_paused(&self) -> Result<bool, Error> {
+        self.command_reply(&["get_property", "pause"]).await
+    }
 }

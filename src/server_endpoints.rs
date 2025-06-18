@@ -158,3 +158,29 @@ pub async fn playlist_next(state: ServerState) -> Result<impl warp::Reply, warp:
         StatusCode::SEE_OTHER,
     ))
 }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CurrentFileInfo {
+    pub duration_ms: f64,
+    pub position_ms: f64,
+    pub is_paused: bool,
+}
+
+pub async fn current_file_info(state: ServerState) -> Result<impl warp::Reply, warp::Rejection> {
+    let (duration_ms, position_ms, is_paused) = match futures::join!(
+        state.ipc.get_duration_ms(),
+        state.ipc.get_time_pos_ms(),
+        state.ipc.get_paused()
+    ) {
+        (Ok(duration_ms), Ok(position_ms), Ok(is_paused)) => (duration_ms, position_ms, is_paused),
+        _ => return Err(warp::reject()),
+    };
+
+    let info = CurrentFileInfo {
+        duration_ms,
+        position_ms,
+        is_paused,
+    };
+
+    Ok(warp::reply::json(&info))
+}

@@ -41,7 +41,13 @@ pub async fn start(addr: SocketAddr, state: ServerState) {
             .or(warp::path("next").and(warp::path::end()).and(playlist_next)),
     );
 
-    let api_routes = warp::path("api").and(enqueue.or(upload_file).or(playlist));
+    let current = warp::path("current")
+        .and(warp::path::end())
+        .and(warp::get())
+        .and(with_arg(state.clone()))
+        .and_then(crate::server_endpoints::current_file_info);
+
+    let api_routes = warp::path("api").and(enqueue.or(upload_file).or(playlist).or(current));
 
     let static_files = warp::path("static").and(warp::fs::dir(state.serve_dir.join("static")));
     let index_html = warp::path::end().and(warp::fs::file(state.serve_dir.join("index.html")));
