@@ -56,6 +56,12 @@ Run `kameloso --help` to see a full list of options. You might need to set:
 - `--serve-dir <path>`: Set this to the path of the `public` directory. By default it looks for `public`. This directory will be created if it doesn't already exist.
 - `--upload-dir <path>`: This is the path of the directory to which the uploaded files will be saved. By default `kameloso` will create a directory called `uploads` in the directory it's run from.
 
+If you want to pass arguments to mpv you'll need to pass them after `--`, for example if you want to set audio normalization:
+
+```
+kameloso -- --af=dynaudnorm=f=100
+```
+
 ### Customizing the web UI
 
 If you want to customize the web UI, just change the `index.html` file in the `public/` directory. Note that if you want to serve other files as well, they have to be in the `public/static/` directory.
