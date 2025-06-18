@@ -1,4 +1,4 @@
-use futures::TryStreamExt;
+use futures::{StreamExt, TryStreamExt};
 use serde::Serialize;
 use tokio::io::AsyncWriteExt;
 use warp::http::StatusCode;
@@ -83,16 +83,12 @@ pub async fn enqueue_url(
     ))
 }
 
+// TODO add error messages
 pub async fn upload_file(
-    form: FormData,
+    mut form: FormData,
     state: ServerState,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let parts: Vec<_> = form
-        .try_collect()
-        .await
-        .map_err(|_| warp::reject::reject())?;
-
-    for p in parts {
+    while let Some(Ok(p)) = form.next().await {
         if p.name() != "file" {
             return Err(warp::reject::reject());
         }

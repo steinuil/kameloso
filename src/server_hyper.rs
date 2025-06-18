@@ -9,6 +9,8 @@ fn with_arg<T: std::marker::Send + std::clone::Clone>(
     warp::any().map(move || t.clone())
 }
 
+const MAX_UPLOAD_SIZE: u64 = 4 * 1024 * 1024 * 1024;
+
 pub async fn start(addr: SocketAddr, state: ServerState) {
     let enqueue = warp::path("enqueue")
         .and(warp::path::end())
@@ -17,10 +19,11 @@ pub async fn start(addr: SocketAddr, state: ServerState) {
         .and(with_arg(state.clone()))
         .and_then(crate::server_endpoints::enqueue_url);
 
+    // TODO make upload size configurable
     let upload_file = warp::path("upload")
         .and(warp::path::end())
         .and(warp::post())
-        .and(warp::multipart::form())
+        .and(warp::multipart::form().max_length(MAX_UPLOAD_SIZE))
         .and(with_arg(state.clone()))
         .and_then(crate::server_endpoints::upload_file);
 
