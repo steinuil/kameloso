@@ -10,6 +10,8 @@ enum RawMessage {
     },
     Event {
         event: String,
+        #[serde(flatten)]
+        fields: serde_json::Value,
     },
 }
 
@@ -20,7 +22,10 @@ pub enum Message {
         data: Result<serde_json::Value, String>,
     },
     ResponseWithoutId(Result<serde_json::Value, String>),
-    Event(String),
+    Event {
+        event: String,
+        fields: serde_json::Value,
+    },
 }
 
 impl Message {
@@ -56,7 +61,7 @@ impl From<RawMessage> for Message {
             } else {
                 Err(error)
             }),
-            RawMessage::Event { event } => Message::Event(event),
+            RawMessage::Event { event, fields } => Message::Event { event, fields },
         }
     }
 }

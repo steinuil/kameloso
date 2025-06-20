@@ -69,9 +69,10 @@ impl Client {
         Client { commands_tx }
     }
 
-    async fn command_reply<T: DeserializeOwned>(&self, cmd: &[&str]) -> Result<T, Error> {
-        let cmd = cmd.iter().map(|s| s.to_string()).collect();
-
+    async fn command_reply_json<T: DeserializeOwned>(
+        &self,
+        cmd: serde_json::Value,
+    ) -> Result<T, Error> {
         let future = reactor::send_command(cmd, &self.commands_tx)
             .await
             .map_err(|_| Error::CommandsChannelClosed)?;
@@ -79,6 +80,12 @@ impl Client {
         let response = future.await?.map_err(Error::Mpv)?;
 
         serde_json::from_value(response).map_err(Error::InvalidResponse)
+    }
+
+    async fn command_reply<T: DeserializeOwned>(&self, cmd: &[&str]) -> Result<T, Error> {
+        let cmd = cmd.iter().map(|s| s.to_string()).collect();
+
+        self.command_reply_json(cmd).await
     }
 
     pub async fn load_file(&self, url: &str, options: &LoadFileOptions) -> Result<LoadFile, Error> {
@@ -145,5 +152,10 @@ impl Client {
 
     pub async fn get_paused(&self) -> Result<bool, Error> {
         self.command_reply(&["get_property", "pause"]).await
+    }
+
+    pub async fn observe_property(&self, property: &str) -> Result<(), Error> {
+        self.command_reply_json(serde_json::json!(["observe_property", 1, property]))
+            .await
     }
 }

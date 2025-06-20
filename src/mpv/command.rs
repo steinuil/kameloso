@@ -3,12 +3,12 @@ use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct RawCommand {
     pub request_id: i64,
-    pub command: Vec<String>,
+    pub command: serde_json::Value,
     pub r#async: bool,
 }
 
 impl RawCommand {
-    pub fn new(request_id: i64, command: Vec<String>) -> Self {
+    pub fn new(request_id: i64, command: serde_json::Value) -> Self {
         Self {
             request_id,
             command,

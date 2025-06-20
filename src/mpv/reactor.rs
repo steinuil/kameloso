@@ -15,7 +15,7 @@ pub type Response = Result<serde_json::Value, String>;
 
 pub type ResponseHandler = oneshot::Sender<Response>;
 
-pub type CommandWithHandler = (Vec<String>, ResponseHandler);
+pub type CommandWithHandler = (serde_json::Value, ResponseHandler);
 
 #[derive(Debug)]
 pub enum PipeClosed {
@@ -85,11 +85,11 @@ impl<NamedPipe: AsyncRead + AsyncWrite + Unpin> Reactor<NamedPipe> {
                         None => todo!(),
                     }
                 }
-                Ok(Message::ResponseWithoutId(_data)) => {
-                    log::warn!("");
+                Ok(Message::ResponseWithoutId(data)) => {
+                    log::warn!("received response without ID: {data:?}");
                 }
-                Ok(Message::Event(ev)) => {
-                    log::info!("received event: {ev}");
+                Ok(Message::Event { event, fields: _ }) => {
+                    log::info!("received event: {event}");
                 }
                 Err(e) => {
                     log::error!("failed to decode mpv message: {e}");
@@ -100,7 +100,7 @@ impl<NamedPipe: AsyncRead + AsyncWrite + Unpin> Reactor<NamedPipe> {
 
     async fn send_command(
         &mut self,
-        cmd: Vec<String>,
+        cmd: serde_json::Value,
         handler: ResponseHandler,
     ) -> Result<(), io::Error> {
         let request_id = self.insert_handler(handler);
@@ -169,7 +169,7 @@ where
 }
 
 pub async fn send_command(
-    cmd: Vec<String>,
+    cmd: serde_json::Value,
     commands_tx: &UnboundedSender<CommandWithHandler>,
 ) -> Result<oneshot::Receiver<Response>, SendError<CommandWithHandler>> {
     let (handler_tx, handler_rx) = oneshot::channel();
