@@ -62,13 +62,15 @@ input {
 }
 
 #np_outer h2,
-#lists h2 {
+#lists h2,
+#settings h2 {
 	margin: 0;
 	padding: .3em 0;
 	letter-spacing: .2em;
 }
 
-#lists h2 {
+#lists h2,
+#settings h2 {
 	box-shadow: 0 .1em 0 #2d2d2d;
 	border-bottom: .1em solid #444;
 }
@@ -116,6 +118,10 @@ input {
 #lists a {
 	padding: 0 .5em;
 	border-left: .1em solid #888;
+}
+
+#settings {
+	text-align: center;
 }
 
 @media (min-width: 60em) {

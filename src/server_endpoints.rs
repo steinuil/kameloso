@@ -203,5 +203,8 @@ pub async fn toggle_qr_code(state: ServerState) -> Result<impl warp::Reply, warp
 
     params.active = !params.active;
 
-    Ok(warp::reply())
+    Ok(warp::reply::with_status(
+        warp::reply::with_header(warp::reply(), "Location", "/"),
+        StatusCode::SEE_OTHER,
+    ))
 }
