@@ -92,9 +92,10 @@ function render(entries) {
 function updatePlaylist() {
   fetch("/api/playlist")
     .then((resp) => resp.json())
-    .then((playlist) => render(playlist));
+    .then((playlist) => {
+      render(playlist);
+      setTimeout(updatePlaylist, 10 * 1000);
+    });
 }
 
 updatePlaylist();
-
-setInterval(updatePlaylist, 10 * 1000);
