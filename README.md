@@ -45,9 +45,26 @@ The web UI looks like this:
 
 And [this](https://github.com/steinuil/kameloso/blob/master/extras/pictures/intended-usage.jpg) is how it looks in the wild.
 
-### Useful tips
+### Useful tips 'n' tricks
 
 - You can get around youtube's age restriction by [configuring](https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#configuration) `yt-dlp` to use [cookies from your browser](https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#changes-from-youtube-dl).
+
+  ```
+  # yt-dlp.conf
+  --cookies-from-browser firefox
+  ```
+
+- You can enable audio normalization (useful not to get your ears blown out) by passing `--af=dynaudnorm=f=100` to the extra mpv args (or put this option in your `mpv.conf`):
+
+  ```bash
+  kameloso -- --af=dynaudnorm=f=100
+  ```
+
+- You can "pre-seed" the queue when starting kameloso by just passing some video files to the extra mpv args, which may be nice if you want to watch a series or a movie and then keep the player open later to queue up some music.
+
+  ```bash
+  kameloso -- '~/Downloads/Ore, Twintails ni Narimasu (2014) [Doki][1920x1080 Hi10P BD FLAC]/'
+  ```
 
 ### Other options
 
