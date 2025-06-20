@@ -1,9 +1,9 @@
 use serde::de::DeserializeOwned;
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 use super::{
     error::Error,
-    reactor::{self, CommandWithHandler},
+    reactor::{self, Command},
 };
 
 use self::response::*;
@@ -61,11 +61,11 @@ pub enum LoadFileOptions {
 
 #[derive(Debug, Clone)]
 pub struct Client {
-    commands_tx: UnboundedSender<CommandWithHandler>,
+    commands_tx: UnboundedSender<Command>,
 }
 
 impl Client {
-    pub fn new(commands_tx: UnboundedSender<CommandWithHandler>) -> Self {
+    pub fn new(commands_tx: UnboundedSender<Command>) -> Self {
         Client { commands_tx }
     }
 
@@ -154,8 +154,19 @@ impl Client {
         self.command_reply(&["get_property", "pause"]).await
     }
 
-    pub async fn observe_property(&self, property: &str) -> Result<(), Error> {
-        self.command_reply_json(serde_json::json!(["observe_property", 1, property]))
-            .await
+    pub async fn observe_property(
+        &self,
+        property: &str,
+    ) -> Result<UnboundedReceiver<serde_json::Value>, Error> {
+        let (future, data_stream) =
+            reactor::observe_property(property.to_string(), &self.commands_tx)
+                .await
+                .map_err(|_| Error::CommandsChannelClosed)?;
+
+        let response = future.await?.map_err(Error::Mpv)?;
+
+        let () = serde_json::from_value(response).map_err(Error::InvalidResponse)?;
+
+        Ok(data_stream)
     }
 }

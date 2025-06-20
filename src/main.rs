@@ -13,8 +13,10 @@ use std::{
 };
 use tokio::{
     fs,
-    sync::{mpsc, Mutex},
+    sync::{mpsc, Mutex, RwLock},
 };
+
+use crate::mpv::response::PlaylistEntry;
 
 #[derive(Debug, Parser)]
 #[command(version)]
@@ -164,6 +166,23 @@ async fn main() {
         .await
         .unwrap();
 
+    let playlist: Arc<RwLock<Vec<PlaylistEntry>>> = Arc::new(RwLock::new(vec![]));
+    let mut data_stream = mpv_ipc.observe_property("playlist").await.unwrap();
+
+    tokio::spawn({
+        let playlist = playlist.clone();
+        async move {
+            while let Some(p) = data_stream.recv().await {
+                if let Ok(v) = serde_json::from_value::<Vec<PlaylistEntry>>(p) {
+                    log::info!("playlist: {v:?}");
+                    *playlist.write().await = v;
+                } else {
+                    log::error!("failed to decode playlist")
+                }
+            }
+        }
+    });
+
     let server_handle = tokio::spawn(server_hyper::start(
         opts.bind_address,
         server_state::ServerState {
@@ -171,6 +190,7 @@ async fn main() {
             serve_dir,
             upload_dir: opts.upload_dir,
             qr_code_params: Arc::new(Mutex::new(qr_code_params)),
+            playlist,
         },
     ));
 

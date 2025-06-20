@@ -152,9 +152,9 @@ pub async fn upload_file(
 }
 
 pub async fn get_playlist(state: ServerState) -> Result<impl warp::Reply, warp::Rejection> {
-    let playlist = state.ipc.get_playlist().await?;
+    let playlist = state.playlist.read().await;
 
-    Ok(warp::reply::json(&playlist))
+    Ok(warp::reply::json(&*playlist))
 }
 
 pub async fn playlist_next(state: ServerState) -> Result<impl warp::Reply, warp::Rejection> {

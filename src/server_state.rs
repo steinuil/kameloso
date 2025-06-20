@@ -1,8 +1,11 @@
 use std::{path::PathBuf, sync::Arc};
 
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 
-use crate::{mpv::Client, qr::QrCodeParams};
+use crate::{
+    mpv::{response::PlaylistEntry, Client},
+    qr::QrCodeParams,
+};
 
 #[derive(Debug, Clone)]
 pub struct ServerState {
@@ -10,4 +13,5 @@ pub struct ServerState {
     pub serve_dir: PathBuf,
     pub upload_dir: PathBuf,
     pub qr_code_params: Arc<Mutex<QrCodeParams>>,
+    pub playlist: Arc<RwLock<Vec<PlaylistEntry>>>,
 }

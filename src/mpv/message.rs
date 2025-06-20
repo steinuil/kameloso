@@ -15,6 +15,12 @@ enum RawMessage {
     },
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct PropertyChange {
+    pub name: String,
+    pub data: serde_json::Value,
+}
+
 #[derive(Debug, Clone)]
 pub enum Message {
     Response {
@@ -26,6 +32,7 @@ pub enum Message {
         event: String,
         fields: serde_json::Value,
     },
+    PropertyChange(PropertyChange),
 }
 
 impl Message {
@@ -61,6 +68,15 @@ impl From<RawMessage> for Message {
             } else {
                 Err(error)
             }),
+            RawMessage::Event { event, fields } if &event == "property-change" => {
+                match serde_json::from_value::<PropertyChange>(fields.clone()) {
+                    Ok(property_change) => Message::PropertyChange(property_change),
+                    Err(e) => {
+                        log::warn!("failed to decode property-change event: {e}");
+                        Message::Event { event, fields }
+                    }
+                }
+            }
             RawMessage::Event { event, fields } => Message::Event { event, fields },
         }
     }
