@@ -5,6 +5,7 @@ use warp::http::StatusCode;
 use warp::multipart::FormData;
 use warp::{reply, Buf};
 
+use crate::qr;
 use crate::{
     mpv::{Error as IpcError, LoadFileOptions},
     server_state::ServerState,
@@ -189,4 +190,18 @@ pub async fn current_file_info(state: ServerState) -> Result<impl warp::Reply, w
     };
 
     Ok(warp::reply::json(&info))
+}
+
+pub async fn toggle_qr_code(state: ServerState) -> Result<impl warp::Reply, warp::Rejection> {
+    let mut params = state.qr_code_params.lock().await;
+
+    if params.active {
+        qr::remove_qr_code_overlay(&state.ipc).await?;
+    } else {
+        qr::add_qr_code_overlay(&state.ipc, &params).await?;
+    }
+
+    params.active = !params.active;
+
+    Ok(warp::reply())
 }

@@ -6,8 +6,11 @@ mod server_hyper;
 mod server_state;
 
 use clap::Parser;
-use std::{net::SocketAddr, path::PathBuf};
-use tokio::{fs, sync::mpsc};
+use std::{net::SocketAddr, path::PathBuf, sync::Arc};
+use tokio::{
+    fs,
+    sync::{mpsc, Mutex},
+};
 
 #[derive(Debug, Parser)]
 #[command(version)]
@@ -135,34 +138,26 @@ async fn main() {
 
     let reactor_handle = tokio::spawn(mpv::reactor::start(mpv_pipe, commands_rx));
 
-    {
-        let local_ip = local_ip_address::local_ip().unwrap();
-        let qr_code_address = format!("http://{}:{}", local_ip, opts.bind_address.port());
+    let local_ip = local_ip_address::local_ip().unwrap();
+    let qr_code_address = format!("http://{}:{}", local_ip, opts.bind_address.port());
 
-        let qr_code = qrcode::QrCode::new(qr_code_address.as_bytes()).unwrap();
+    let qr_code_path = runtime_dir.join("qr-code.bgra");
+    let magnification = 4;
 
-        let qr_code_path = runtime_dir.join("qr-code.bgra");
+    let qr_code_width = qr::generate_qr_code(&qr_code_address, &qr_code_path, magnification)
+        .await
+        .unwrap();
 
-        {
-            let f = fs::File::create(&qr_code_path).await.unwrap();
-            let mut out = tokio::io::BufWriter::new(f);
+    let qr_code_params = qr::QrCodeParams {
+        path: qr_code_path.to_string_lossy().to_string(),
+        magnification,
+        width: qr_code_width,
+        active: true,
+    };
 
-            qr::write_bgra(&qr_code, 4, &mut out).await.unwrap();
-        }
-
-        mpv_ipc
-            .overlay_add(&mpv::OverlayAddOptions {
-                id: 3,
-                x: 20,
-                y: 20,
-                file: qr_code_path.to_string_lossy().to_string(),
-                w: (qr_code.width() as u32 + 2) * 4,
-                h: (qr_code.width() as u32 + 2) * 4,
-                offset: 0,
-            })
-            .await
-            .unwrap();
-    }
+    qr::add_qr_code_overlay(&mpv_ipc, &qr_code_params)
+        .await
+        .unwrap();
 
     let server_handle = tokio::spawn(server_hyper::start(
         opts.bind_address,
@@ -170,6 +165,7 @@ async fn main() {
             ipc: mpv_ipc,
             serve_dir,
             upload_dir: opts.upload_dir,
+            qr_code_params: Arc::new(Mutex::new(qr_code_params)),
         },
     ));
 
