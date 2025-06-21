@@ -6,7 +6,11 @@ mod server_hyper;
 mod server_state;
 
 use clap::Parser;
-use std::{net::SocketAddr, path::PathBuf, sync::Arc};
+use std::{
+    net::{Ipv4Addr, SocketAddr},
+    path::PathBuf,
+    sync::Arc,
+};
 use tokio::{
     fs,
     sync::{mpsc, Mutex},
@@ -138,7 +142,8 @@ async fn main() {
 
     let reactor_handle = tokio::spawn(mpv::reactor::start(mpv_pipe, commands_rx));
 
-    let local_ip = local_ip_address::local_ip().unwrap();
+    let local_ip =
+        local_ip_address::local_ip().unwrap_or(std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
     let qr_code_address = format!("http://{}:{}", local_ip, opts.bind_address.port());
 
     let qr_code_path = runtime_dir.join("qr-code.bgra");
